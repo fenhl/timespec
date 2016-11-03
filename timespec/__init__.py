@@ -114,6 +114,7 @@ def parse(spec, *, start=None, tz=pytz.utc):
     ]
     end_date = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times)))
     assert is_aware(end_date)
+    return end_date
 
 def parse_iso_date(date_str):
     parts = date_str.split('-')
