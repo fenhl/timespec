@@ -1,4 +1,4 @@
-**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.0.0 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
+**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.1.0 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
 
 # Syntax
 
@@ -21,3 +21,7 @@ The strings `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun` (all case insens
 ## Modulus
 
 A number followed by an `s` for second, `m` for minute, `h` for hour, or `d` for day of month (all case sensitive) matches datetimes where the remainder of the specified part divided by the given number is zero. For example, `15m ::0` matches datetimes on every quarter hour.
+
+## POSIX timestamp
+
+A number with 10 or more digits matches the datetime with that exact POSIX timestamp.
