@@ -4,7 +4,7 @@ import contextlib
 import datetime
 import pytz
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 WEEKDAYS = [
     'mon',
@@ -92,6 +92,7 @@ def parse(spec, *, start=None, tz=pytz.utc):
             predicate_int = int(predicate_str)
             if 1000000000 <= predicate_int:
                 datetime_predicates.append(equals_predicate(datetime.datetime.fromtimestamp(predicate_int, tz)))
+            continue
         sys.exit('[!!!!] unknown timespec')
     years = predicate_list(year_predicates, range(start.year, start.year + 100))
     months = predicate_list(month_predicates, range(1, 13))
