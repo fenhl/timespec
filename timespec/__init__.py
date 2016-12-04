@@ -4,7 +4,7 @@ import contextlib
 import datetime
 import pytz
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 WEEKDAYS = [
     'mon',
@@ -91,7 +91,10 @@ def parse(spec, *, start=None, tz=pytz.utc):
         with contextlib.suppress(ValueError):
             predicate_int = int(predicate_str)
             if 1000000000 <= predicate_int:
-                datetime_predicates.append(equals_predicate(datetime.datetime.fromtimestamp(predicate_int, tz)))
+                timestamp = datetime.datetime.fromtimestamp(predicate_int, tz)
+                date_predicates.append(equals_predicate(timestamp.date()))
+                time_predicates.append(equals_predicate(timestamp.timetz()))
+                datetime_predicates.append(equals_predicate(timestamp))
             continue
         sys.exit('[!!!!] unknown timespec')
     years = predicate_list(year_predicates, range(start.year, start.year + 100))
