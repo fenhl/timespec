@@ -1,10 +1,8 @@
-import sys
-
 import contextlib
 import datetime
 import pytz
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 WEEKDAYS = [
     'mon',
@@ -52,7 +50,7 @@ def parse(spec, *, start=None, tz=pytz.utc):
         with contextlib.suppress(ValueError):
             end_date = parse_iso_date(predicate_str)
             if end_date < start.date():
-                sys.exit('[!!!!] specified date is in the past')
+                raise ValueError('Specified date is in the past')
             year_predicates.append(lambda y: y == end_date.year)
             month_predicates.append(lambda m: m == end_date.month)
             day_predicates.append(lambda d: d == end_date.day)
@@ -96,7 +94,7 @@ def parse(spec, *, start=None, tz=pytz.utc):
                 time_predicates.append(equals_predicate(timestamp.timetz()))
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
-        sys.exit('[!!!!] unknown timespec')
+        raise ValueError('Unknown timespec')
     years = predicate_list(year_predicates, range(start.year, start.year + 100))
     months = predicate_list(month_predicates, range(1, 13))
     days = predicate_list(day_predicates, range(1, 32))
@@ -135,7 +133,7 @@ def parse_iso_date(date_str):
 def predicate_list(predicates, values):
     result = list(resolve_predicates(predicates, values))
     if len(result) == 0:
-        sys.exit('[!!!!] no matching datetime found')
+        raise ValueError('No matching datetime found')
     return result
 
 def resolve_predicates(predicates, values):
