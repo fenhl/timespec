@@ -40,9 +40,18 @@ def is_aware(datetime_or_time):
 def modulus_predicate(modulus):
     return lambda v: v % modulus == 0
 
-def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
-    if start is None:
-        start = datetime.datetime.now(tz)
+def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
+    if candidates is not None:
+        candidates = sorted(candidates, reverse=reverse)
+        if len(candidates) == 0:
+            raise ValueError('Empty candidates list')
+    if candidates is None:
+        if start is None:
+            start = datetime.datetime.now(tz)
+        end = start.replace(year=start.year - 10 if reverse else start.year + 10, day=28 if start.month == 2 and start.day == 29 else start.day)
+    else:
+        start = candidates[0]
+        end = candidates[-1]
     year_predicates = []
     month_predicates = []
     day_predicates = []
@@ -109,9 +118,9 @@ def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
             continue
         raise ValueError('Unknown timespec')
     if reverse:
-        years = predicate_list(year_predicates, range(start.year, start.year - 11, -1))
+        years = predicate_list(year_predicates, range(start.year, end.year - 1, -1))
     else:
-        years = predicate_list(year_predicates, range(start.year, start.year + 11))
+        years = predicate_list(year_predicates, range(start.year, end.year + 1))
     months = predicate_list(month_predicates, range(1, 13))
     days = predicate_list(day_predicates, range(1, 32))
     if len(year_predicates) > 0 or len(month_predicates) > 0 or len(day_predicates) > 0:
@@ -121,9 +130,9 @@ def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
             lambda date: date.day in days
         ]
     if reverse:
-        dates = predicate_list(date_predicates, date_range(start.date(), start.date().replace(year=start.year - 10)))
+        dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
     else:
-        dates = predicate_list(date_predicates, date_range(start.date(), start.date().replace(year=start.year + 10)))
+        dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
     hours = predicate_list(hour_predicates, range(24))
     minutes = predicate_list(minute_predicates, range(60))
     seconds = predicate_list(second_predicates, range(60))
@@ -139,7 +148,7 @@ def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
     ]
-    result = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times)))
+    result = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times) if candidates is None else candidates))
     assert is_aware(result)
     return result
 
