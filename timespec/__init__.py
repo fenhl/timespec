@@ -15,10 +15,16 @@ WEEKDAYS = [
 ]
 
 def date_range(start, end):
-    date = start
-    while date < end:
-        yield date
-        date += datetime.timedelta(days=1)
+    if end < start:
+        date = start
+        while date > end:
+            yield date
+            date -= datetime.timedelta(days=1)
+    else:
+        date = start
+        while date < end:
+            yield date
+            date += datetime.timedelta(days=1)
 
 def equals_predicate(value):
     return lambda v: v == value
@@ -34,7 +40,7 @@ def is_aware(datetime_or_time):
 def modulus_predicate(modulus):
     return lambda v: v % modulus == 0
 
-def parse(spec, *, start=None, tz=pytz.utc):
+def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
     if start is None:
         start = datetime.datetime.now(tz)
     year_predicates = []
@@ -49,8 +55,12 @@ def parse(spec, *, start=None, tz=pytz.utc):
     for predicate_str in spec:
         with contextlib.suppress(ValueError):
             end_date = parse_iso_date(predicate_str)
-            if end_date < start.date():
-                raise ValueError('Specified date is in the past')
+            if reverse:
+                if end_date > start.date():
+                    raise ValueError('Specified date is in the future')
+            else:
+                if end_date < start.date():
+                    raise ValueError('Specified date is in the past')
             year_predicates.append(lambda y: y == end_date.year)
             month_predicates.append(lambda m: m == end_date.month)
             day_predicates.append(lambda d: d == end_date.day)
@@ -95,7 +105,10 @@ def parse(spec, *, start=None, tz=pytz.utc):
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
-    years = predicate_list(year_predicates, range(start.year, start.year + 100))
+    if reverse:
+        years = predicate_list(year_predicates, range(start.year, start.year - 11, -1))
+    else:
+        years = predicate_list(year_predicates, range(start.year, start.year + 11))
     months = predicate_list(month_predicates, range(1, 13))
     days = predicate_list(day_predicates, range(1, 32))
     if len(year_predicates) > 0 or len(month_predicates) > 0 or len(day_predicates) > 0:
@@ -104,7 +117,10 @@ def parse(spec, *, start=None, tz=pytz.utc):
             lambda date: date.month in months,
             lambda date: date.day in days
         ]
-    dates = predicate_list(date_predicates, date_range(start.date(), start.date().replace(year=start.year + 10)))
+    if reverse:
+        dates = predicate_list(date_predicates, date_range(start.date(), start.date().replace(year=start.year - 10)))
+    else:
+        dates = predicate_list(date_predicates, date_range(start.date(), start.date().replace(year=start.year + 10)))
     hours = predicate_list(hour_predicates, range(24))
     minutes = predicate_list(minute_predicates, range(60))
     seconds = predicate_list(second_predicates, range(60))
@@ -114,7 +130,7 @@ def parse(spec, *, start=None, tz=pytz.utc):
             lambda time: time.minute in minutes,
             lambda time: time.second in seconds
         ]
-    times = predicate_list(time_predicates, time_range(tz))
+    times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
     datetime_predicates += [
         lambda date_time: date_time > start,
         lambda date_time: date_time.date() in dates,
@@ -141,11 +157,17 @@ def resolve_predicates(predicates, values):
         if all(predicate(val) for predicate in predicates):
             yield val
 
-def time_range(tz=datetime.timezone.utc):
-    for hour in range(24):
-        for minute in range(60):
-            for second in range(60):
-                yield datetime.time(hour, minute, second, tzinfo=tz)
+def time_range(tz=datetime.timezone.utc, *, reverse=False):
+    if reverse:
+        for hour in range(23, -1, -1):
+            for minute in range(59, -1, -1):
+                for second in range(59, -1, -1):
+                    yield datetime.time(hour, minute, second, tzinfo=tz)
+    else:
+        for hour in range(24):
+            for minute in range(60):
+                for second in range(60):
+                    yield datetime.time(hour, minute, second, tzinfo=tz)
 
 def weekday_predicate(weekday):
     return lambda date: date.weekday() == weekday

@@ -1,8 +1,8 @@
-**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.1.3 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
+**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.2.0 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
 
 # Syntax
 
-A *timespec* consists of a list of whitespace-separated *predicates*, making them ideal as command-line arguments, as well as an optional start datetime and timezone. The start datetime defaults to the current system datetime, and the timezone defaults to UTC. The date described by a timespec is defined as the first datetime that is no earlier than the start datetime and matches all predicates. For performance reasons, this implementation will fail to find datetimes which are more than 10 years after the start datetime.
+A *timespec* consists of a list of whitespace-separated *predicates*, making them ideal as command-line arguments, as well as an optional direction (chronological or reverse), start datetime, and timezone. The direction defaults to chronological, the start datetime defaults to the current system datetime, and the timezone defaults to UTC. The date described by a timespec is defined as the datetime closest to the start datetime that matches all predicates and is no earlier (chronological) or no later (reverse) than the start datetime, depending on the direction. For performance reasons, this implementation will fail to find datetimes which are more than 10 years before or after the start datetime.
 
 The following predicates are currently supported:
 
