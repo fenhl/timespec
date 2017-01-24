@@ -42,7 +42,7 @@ def modulus_predicate(modulus):
 
 def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
     if candidates is not None:
-        candidates = sorted(candidates, reverse=reverse)
+        candidates = sorted((candidate if is_aware(candidate) else tz.localize(candidate) for candidate in candidates), reverse=reverse)
         if len(candidates) == 0:
             raise ValueError('Empty candidates list')
     if candidates is None:
@@ -144,10 +144,13 @@ def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
         ]
     times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
     datetime_predicates += [
-        lambda date_time: date_time > start,
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
     ]
+    if reverse:
+        datetime_predicates.append(lambda date_time: date_time <= start)
+    else:
+        datetime_predicates.append(lambda date_time: date_time >= start)
     result = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times) if candidates is None else candidates))
     assert is_aware(result)
     return result
