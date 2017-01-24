@@ -53,17 +53,20 @@ def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
     time_predicates = []
     datetime_predicates = []
     for predicate_str in spec:
-        with contextlib.suppress(ValueError):
-            end_date = parse_iso_date(predicate_str)
+        try:
+            date = parse_iso_date(predicate_str)
+        except ValueError:
+            pass # not a date
+        else:
             if reverse:
-                if end_date > start.date():
+                if date > start.date():
                     raise ValueError('Specified date is in the future')
             else:
-                if end_date < start.date():
+                if date < start.date():
                     raise ValueError('Specified date is in the past')
-            year_predicates.append(lambda y: y == end_date.year)
-            month_predicates.append(lambda m: m == end_date.month)
-            day_predicates.append(lambda d: d == end_date.day)
+            year_predicates.append(lambda y: y == date.year)
+            month_predicates.append(lambda m: m == date.month)
+            day_predicates.append(lambda d: d == date.day)
             continue
         if ':' in predicate_str:
             if len(predicate_str.split(':')) == 3:
@@ -136,9 +139,9 @@ def parse(spec, *, reverse=False, start=None, tz=pytz.utc):
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
     ]
-    end_date = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times)))
-    assert is_aware(end_date)
-    return end_date
+    result = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times)))
+    assert is_aware(result)
+    return result
 
 def parse_iso_date(date_str):
     parts = date_str.split('-')
