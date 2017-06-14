@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+import setuptools
 
-setup(name='timespec',
-        description='Quickly specify dates and times',
-        author='Fenhl',
-        packages=["timespec"],
-        install_requires=[
-            "pytz",
-        ]
-    )
+setuptools.setup(
+    name='timespec',
+    description='Quickly specify dates and times',
+    author='Fenhl',
+    packages=['timespec'],
+    install_requires=[
+        'pytz',
+    ]
+)
