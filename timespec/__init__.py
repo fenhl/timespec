@@ -1,8 +1,11 @@
 import contextlib
 import datetime
 import pytz
+import re
 
-__version__ = '1.1.3'
+import timespec.relative
+
+__version__ = '1.3.0'
 
 WEEKDAYS = [
     'mon',
@@ -40,7 +43,7 @@ def is_aware(datetime_or_time):
 def modulus_predicate(modulus):
     return lambda v: v % modulus == 0
 
-def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
+def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, reverse=False, start=None, tz=pytz.utc):
     if candidates is not None:
         candidates = sorted((candidate if is_aware(candidate) else tz.localize(candidate) for candidate in candidates), reverse=reverse)
         if len(candidates) == 0:
@@ -62,6 +65,19 @@ def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
     time_predicates = []
     datetime_predicates = []
     for predicate_str in spec:
+        match = re.fullmatch('([a-z]+):(.*)', predicate_str)
+        if match:
+            plugin = plugins[match.group(1)](match.group(2), start)
+            year_predicates.append(plugin.year_predicate)
+            month_predicates.append(plugin.month_predicate)
+            day_predicates.append(plugin.day_predicate)
+            date_predicates.append(plugin.date_predicate)
+            hour_predicates.append(plugin.hour_predicate)
+            minute_predicates.append(plugin.minute_predicate)
+            second_predicates.append(plugin.second_predicate)
+            time_predicates.append(plugin.time_predicate)
+            datetime_predicates.append(plugin.datetime_predicate)
+            continue
         try:
             date = parse_iso_date(predicate_str)
         except ValueError:
@@ -117,22 +133,29 @@ def parse(spec, *, candidates=None, reverse=False, start=None, tz=pytz.utc):
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
-    if reverse:
-        years = predicate_list(year_predicates, range(start.year, end.year - 1, -1))
+    if len(date_predicates) == 0 and len(datetime_predicates) == 0:
+        # optimization: if predicates are daytime only, result must be within one day of start
+        if reverse:
+            dates = [start.date(), start.date() - datetime.timedelta(days=1)]
+        else:
+            dates = [start.date(), start.date() + datetime.timedelta(days=1)]
     else:
-        years = predicate_list(year_predicates, range(start.year, end.year + 1))
-    months = predicate_list(month_predicates, range(1, 13))
-    days = predicate_list(day_predicates, range(1, 32))
-    if len(year_predicates) > 0 or len(month_predicates) > 0 or len(day_predicates) > 0:
-        date_predicates += [
-            lambda date: date.year in years,
-            lambda date: date.month in months,
-            lambda date: date.day in days
-        ]
-    if reverse:
-        dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
-    else:
-        dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
+        if reverse:
+            years = predicate_list(year_predicates, range(start.year, end.year - 1, -1))
+        else:
+            years = predicate_list(year_predicates, range(start.year, end.year + 1))
+        months = predicate_list(month_predicates, range(1, 13))
+        days = predicate_list(day_predicates, range(1, 32))
+        if len(year_predicates) > 0 or len(month_predicates) > 0 or len(day_predicates) > 0:
+            date_predicates += [
+                lambda date: date.year in years,
+                lambda date: date.month in months,
+                lambda date: date.day in days
+            ]
+        if reverse:
+            dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
+        else:
+            dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
     hours = predicate_list(hour_predicates, range(24))
     minutes = predicate_list(minute_predicates, range(60))
     seconds = predicate_list(second_predicates, range(60))
