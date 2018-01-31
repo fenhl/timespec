@@ -133,7 +133,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
-    if len(date_predicates) == 0 and len(datetime_predicates) == 0:
+    if candidates is None and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates]):
         # optimization: if predicates are daytime only, result must be within one day of start
         if reverse:
             dates = [start.date(), start.date() - datetime.timedelta(days=1)]
