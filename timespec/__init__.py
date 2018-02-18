@@ -156,16 +156,23 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
             dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
         else:
             dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
-    hours = predicate_list(hour_predicates, range(24))
-    minutes = predicate_list(minute_predicates, range(60))
-    seconds = predicate_list(second_predicates, range(60))
-    if len(hour_predicates) > 0 or len(minute_predicates) > 0 or len(second_predicates) > 0:
-        time_predicates += [
-            lambda time: time.hour in hours,
-            lambda time: time.minute in minutes,
-            lambda time: time.second in seconds
-        ]
-    times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
+    if candidates is None and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
+        # optimization: if predicates are date only, result must be the current time or start/end of day
+        if reverse:
+            times = [start.time().replace(microsecond=0), datetime.time(23, 59, 59)]
+        else:
+            times = [start.time().replace(microsecond=0), datetime.time()]
+    else:
+        hours = predicate_list(hour_predicates, range(24))
+        minutes = predicate_list(minute_predicates, range(60))
+        seconds = predicate_list(second_predicates, range(60))
+        if len(hour_predicates) > 0 or len(minute_predicates) > 0 or len(second_predicates) > 0:
+            time_predicates += [
+                lambda time: time.hour in hours,
+                lambda time: time.minute in minutes,
+                lambda time: time.second in seconds
+            ]
+        times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
     datetime_predicates += [
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
