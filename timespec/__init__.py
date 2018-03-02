@@ -43,6 +43,9 @@ def is_aware(datetime_or_time):
 def modulus_predicate(modulus):
     return lambda v: v % modulus == 0
 
+def now(tz=pytz.utc):
+    return pytz.utc.localize(datetime.datetime.utcnow()).astimezone(tz)
+
 def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, reverse=False, start=None, tz=pytz.utc):
     if candidates is not None:
         candidates = sorted((candidate if is_aware(candidate) else tz.localize(candidate) for candidate in candidates), reverse=reverse)
@@ -50,7 +53,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
             raise ValueError('Empty candidates list')
     if candidates is None:
         if start is None:
-            start = datetime.datetime.now(tz)
+            start = now(tz)
         end = start.replace(year=start.year - 10 if reverse else start.year + 10, day=28 if start.month == 2 and start.day == 29 else start.day)
     else:
         start = candidates[0]
@@ -159,9 +162,9 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
     if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
         # optimization: if predicates are date only and timezone is UTC, result must be the current time or start/end of day
         if reverse:
-            times = [start.time().replace(microsecond=0), pytz.utc.localize(datetime.time(23, 59, 59))]
+            times = [start.timetz().replace(microsecond=0), pytz.utc.localize(datetime.time(23, 59, 59))]
         else:
-            times = [start.time().replace(microsecond=0), pytz.utc.localize(datetime.time())]
+            times = [start.timetz().replace(microsecond=0), pytz.utc.localize(datetime.time())]
     else:
         hours = predicate_list(hour_predicates, range(24))
         minutes = predicate_list(minute_predicates, range(60))
@@ -173,6 +176,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 lambda time: time.second in seconds
             ]
         times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
+    assert all(is_aware(time) for time in times)
     datetime_predicates += [
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
