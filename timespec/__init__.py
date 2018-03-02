@@ -133,8 +133,8 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
-    if candidates is None and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates]):
-        # optimization: if predicates are daytime only, result must be within one day of start
+    if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates]):
+        # optimization: if predicates are daytime only and timezone is UTC, result must be within one day of start
         if reverse:
             dates = [start.date(), start.date() - datetime.timedelta(days=1)]
         else:
@@ -156,12 +156,12 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
             dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
         else:
             dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
-    if candidates is None and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
-        # optimization: if predicates are date only, result must be the current time or start/end of day
+    if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
+        # optimization: if predicates are date only and timezone is UTC, result must be the current time or start/end of day
         if reverse:
-            times = [start.time().replace(microsecond=0), datetime.time(23, 59, 59)]
+            times = [start.time().replace(microsecond=0), pytz.utc.localize(datetime.time(23, 59, 59))]
         else:
-            times = [start.time().replace(microsecond=0), datetime.time()]
+            times = [start.time().replace(microsecond=0), pytz.utc.localize(datetime.time())]
     else:
         hours = predicate_list(hour_predicates, range(24))
         minutes = predicate_list(minute_predicates, range(60))
