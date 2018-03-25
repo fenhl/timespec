@@ -17,6 +17,12 @@ WEEKDAYS = [
     'sun'
 ]
 
+def combine_dates_and_times(dates, times, tz=pytz.utc):
+    for date in dates:
+        for time in times:
+            with contextlib.suppress(pytz.exceptions.NonExistentTimeError):
+                yield tz.localize(datetime.datetime.combine(date, time), is_dst=None)
+
 def date_range(start, end):
     if end < start:
         date = start
@@ -132,7 +138,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
             if 1000000000 <= predicate_int:
                 timestamp = datetime.datetime.fromtimestamp(predicate_int, tz)
                 date_predicates.append(equals_predicate(timestamp.date()))
-                time_predicates.append(equals_predicate(timestamp.timetz()))
+                time_predicates.append(equals_predicate(timestamp.time()))
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
@@ -163,9 +169,9 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
     if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
         # optimization: if predicates are date only and timezone is UTC, result must be the current time or start/end of day
         if reverse:
-            times = [start.timetz().replace(microsecond=0), pytz.utc.localize(datetime.time(23, 59, 59))]
+            times = [start.time().replace(microsecond=0), datetime.time(23, 59, 59)]
         else:
-            times = [pytz.utc.localize(datetime.time()), start.timetz().replace(microsecond=0)]
+            times = [datetime.time(), start.time().replace(microsecond=0)]
     else:
         hours = predicate_list(hour_predicates, range(24))
         minutes = predicate_list(minute_predicates, range(60))
@@ -176,20 +182,17 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 lambda time: time.minute in minutes,
                 lambda time: time.second in seconds
             ]
-        times = time_range(tz, reverse=reverse)
+        times = time_range(reverse=reverse)
     times = predicate_list(time_predicates, times)
-    for time in times:
-        if not is_aware(time):
-            raise RuntimeError('{} is naive'.format(time))
     datetime_predicates += [
         lambda date_time: date_time.date() in dates,
-        lambda date_time: date_time.timetz() in times
+        lambda date_time: date_time.time() in times
     ]
     if reverse:
         datetime_predicates.append(lambda date_time: date_time <= start)
     else:
         datetime_predicates.append(lambda date_time: date_time >= start)
-    result = next(resolve_predicates(datetime_predicates, (datetime.datetime.combine(date, time) for date in dates for time in times) if candidates is None else candidates))
+    result = next(resolve_predicates(datetime_predicates, combine_dates_and_times(dates, times, tz) if candidates is None else candidates))
     assert is_aware(result)
     return result
 
@@ -210,17 +213,17 @@ def resolve_predicates(predicates, values):
         if all(predicate(val) for predicate in predicates):
             yield val
 
-def time_range(tz=datetime.timezone.utc, *, reverse=False):
+def time_range(*, reverse=False):
     if reverse:
         for hour in range(23, -1, -1):
             for minute in range(59, -1, -1):
                 for second in range(59, -1, -1):
-                    yield datetime.time(hour, minute, second, tzinfo=tz)
+                    yield datetime.time(hour, minute, second)
     else:
         for hour in range(24):
             for minute in range(60):
                 for second in range(60):
-                    yield datetime.time(hour, minute, second, tzinfo=tz)
+                    yield datetime.time(hour, minute, second)
 
 def weekday_predicate(weekday):
     return lambda date: date.weekday() == weekday
