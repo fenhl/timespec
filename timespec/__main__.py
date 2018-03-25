@@ -3,7 +3,7 @@
 """Parse a timespec (https://github.com/fenhl/timespec).
 
 Usage:
-  timespec [options] <predicate>...
+  timespec [options] [<predicate>...]
   timespec -h | --help
   timespec --version
 
