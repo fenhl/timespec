@@ -156,15 +156,16 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 lambda date: date.day in days
             ]
         if reverse:
-            dates = predicate_list(date_predicates, date_range(start.date(), end.date() - datetime.timedelta(days=1)))
+            dates = date_range(start.date(), end.date() - datetime.timedelta(days=1))
         else:
-            dates = predicate_list(date_predicates, date_range(start.date(), end.date() + datetime.timedelta(days=1)))
+            dates = date_range(start.date(), end.date() + datetime.timedelta(days=1))
+    dates = predicate_list(date_predicates, dates)
     if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
         # optimization: if predicates are date only and timezone is UTC, result must be the current time or start/end of day
         if reverse:
             times = [start.timetz().replace(microsecond=0), pytz.utc.localize(datetime.time(23, 59, 59))]
         else:
-            times = [start.timetz().replace(microsecond=0), pytz.utc.localize(datetime.time())]
+            times = [pytz.utc.localize(datetime.time()), start.timetz().replace(microsecond=0)]
     else:
         hours = predicate_list(hour_predicates, range(24))
         minutes = predicate_list(minute_predicates, range(60))
@@ -175,8 +176,11 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 lambda time: time.minute in minutes,
                 lambda time: time.second in seconds
             ]
-        times = predicate_list(time_predicates, time_range(tz, reverse=reverse))
-    assert all(is_aware(time) for time in times)
+        times = time_range(tz, reverse=reverse)
+    times = predicate_list(time_predicates, times)
+    for time in times:
+        if not is_aware(time):
+            raise RuntimeError('{} is naive'.format(time))
     datetime_predicates += [
         lambda date_time: date_time.date() in dates,
         lambda date_time: date_time.timetz() in times
