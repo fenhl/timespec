@@ -142,7 +142,13 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
         raise ValueError('Unknown timespec')
-    if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates]):
+    optimized_date = candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates])
+    optimized_daytime = candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates])
+    if optimized_date and optimized_daytime:
+        # no predicates and no candidates matches the start time
+        assert is_aware(start)
+        return start
+    if optimized_date:
         # optimization: if predicates are daytime only and timezone is UTC, result must be within one day of start
         if reverse:
             dates = [start.date(), start.date() - datetime.timedelta(days=1)]
@@ -166,7 +172,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
         else:
             dates = date_range(start.date(), end.date() + datetime.timedelta(days=1))
     dates = predicate_list(date_predicates, dates)
-    if candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates]):
+    if optimized_daytime:
         # optimization: if predicates are date only and timezone is UTC, result must be the current time or start/end of day
         if reverse:
             times = [start.time().replace(microsecond=0), datetime.time(23, 59, 59)]
