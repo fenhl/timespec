@@ -1,20 +1,26 @@
 import datetime
+import re
 
 class Relative:
     def __init__(self, spec, start):
         self.start = start
         self.spec = spec
-        if self.spec.endswith('s'):
-            self.delta = datetime.timedelta(seconds=float(self.spec[:-1]))
-        elif self.spec.endswith('m'):
-            self.delta = datetime.timedelta(minutes=float(self.spec[:-1]))
-        elif self.spec.endswith('h'):
-            self.delta = datetime.timedelta(hours=float(self.spec[:-1]))
-        elif self.spec.endswith('d'):
-            self.delta = datetime.timedelta(days=float(self.spec[:-1]))
-        else:
-            self.delta = datetime.timedelta(seconds=float(self.spec))
-        self.end = self.start + self.delta
+        delta = datetime.timedelta()
+        while spec:
+            match = re.match('([0-9]{1,2})([smhd])', spec)
+            if not match:
+                break
+            delta += datetime.timedelta(**{
+                {
+                    's': 'seconds',
+                    'm': 'minutes',
+                    'h': 'hours',
+                    'd': 'days'
+                }[match.group(2)]: float(match.group(1))
+            })
+            spec = spec[len(match.group(0)):]
+        delta = datetime.timedelta(seconds=float(spec)) # unitless suffix interpreted as seconds
+        self.end = self.start + delta
 
     def year_predicate(self, y):
         return y == self.end.year

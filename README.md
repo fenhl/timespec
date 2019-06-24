@@ -1,4 +1,4 @@
-**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.3.0 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
+**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.4.0 of timespec. See [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
 
 # Syntax
 
@@ -28,10 +28,10 @@ A number with 10 or more digits matches the datetime with that exact POSIX times
 
 ## Plugin
 
-Predicates beginning with one or more ASCII lowercase letters followed by a colon (PCRE: `^[a-z]+:.*$`) are reserved for plugins. This implementation includes a plugin which is enabled by default:
+Predicates beginning with one or more ASCII lowercase letters followed by a colon (PCRE: `^[a-z]+:.*$`) are called plugin predicates and are reserved for implementation-defined functionality.
 
 # Plugins
 
 In this implementation, each plugin may reserve a prefix (the part of a plugin predicate before the colon), and will then be called when a plugin predicate with that prefix is used.
 
-The built-in plugin, `r`, is used to define timestamps relative to the start time, such as `r:3d` (a predicate matching only the timestamp exactly three days after the start time). It is implemented as a plugin to disambiguate from modulus predicates.
+The built-in plugin, `r`, is used to define timestamps relative to the start time, such as `r:3d` (a predicate matching only the timestamp exactly three days after the start time) or `r:1h43m26` (one hour, 43 minutes, and 26 seconds; the `s` suffix is optional if the predicate ends with a number of seconds). It is implemented as a plugin to disambiguate from modulus predicates, and is enabled by default unless the `plugins` keyword argument of `timespec.parse` is given.
