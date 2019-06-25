@@ -19,7 +19,8 @@ class Relative:
                 }[match.group(2)]: float(match.group(1))
             })
             spec = spec[len(match.group(0)):]
-        delta = datetime.timedelta(seconds=float(spec)) # unitless suffix interpreted as seconds
+        if spec:
+            delta = datetime.timedelta(seconds=float(spec)) # unitless suffix interpreted as seconds
         self.end = self.start + delta
 
     def year_predicate(self, y):
