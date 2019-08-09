@@ -141,7 +141,7 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
                 time_predicates.append(equals_predicate(timestamp.time()))
                 datetime_predicates.append(equals_predicate(timestamp))
             continue
-        raise ValueError('Unknown timespec')
+        raise ValueError('Unknown timespec: {!r}'.format(predicate_str))
     optimized_date = candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [year_predicates, month_predicates, day_predicates, date_predicates, datetime_predicates])
     optimized_daytime = candidates is None and tz == pytz.utc and all(len(pred_list) == 0 for pred_list in [hour_predicates, minute_predicates, second_predicates, time_predicates, datetime_predicates])
     if optimized_date and optimized_daytime:
