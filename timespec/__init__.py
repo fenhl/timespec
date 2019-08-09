@@ -198,7 +198,10 @@ def parse(spec, *, candidates=None, plugins={'r': timespec.relative.Relative}, r
         datetime_predicates.append(lambda date_time: date_time <= start)
     else:
         datetime_predicates.append(lambda date_time: date_time >= start)
-    result = next(resolve_predicates(datetime_predicates, combine_dates_and_times(dates, times, tz) if candidates is None else candidates))
+    try:
+        result = next(resolve_predicates(datetime_predicates, combine_dates_and_times(dates, times, tz) if candidates is None else candidates))
+    except StopIteration as e:
+        raise ValueError('No matching timestamps') from e
     assert is_aware(result)
     return result
 
