@@ -7,7 +7,7 @@ class Relative:
         self.spec = spec
         delta = datetime.timedelta()
         while spec:
-            match = re.match('([0-9]{1,2})([smhd])', spec)
+            match = re.match('([0-9]+)([smhd])', spec)
             if not match:
                 break
             delta += datetime.timedelta(**{
