@@ -1,4 +1,4 @@
-**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.4.0 of timespec. See also [`rust-timespec`](https://github.com/fenhl/rust-timespec) for a Rust implementation, or [`sleeptill`](https://github.com/fenhl/syncbin/blob/master/python/sleeptill.py) for an example program that uses this module.
+**timespec** is a simple syntax that allows you to quickly specify dates and times. This is the specification of, and a Python module implementing, version 1.4.0 of timespec. See also [`rust-timespec`](https://github.com/fenhl/rust-timespec) for a Rust implementation, or [`sleeptill`](/sleeptill.py) for an example program that uses this module.
 
 # Syntax
 
